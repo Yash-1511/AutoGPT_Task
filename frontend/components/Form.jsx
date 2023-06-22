@@ -4,14 +4,39 @@ import FormField from "./FormField";
 
 const Form = () => {
   const [form, setForm] = useState({
-    agentname: "",
-    task: "",
+    ai_name: "",
+    ai_role: "",
+    ai_goals: [],
   });
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "ai_goals") {
+      if (value.includes(",")) {
+        // Split the comma-separated values into an array
+        const goalsArray = value.split(",").map((goal) => goal.trim());
+        setForm((prevFormData) => ({
+          ...prevFormData,
+          [name]: goalsArray,
+        }));
+      } else {
+        setForm((prevFormData) => ({
+          ...prevFormData,
+          [name]: [value.trim()],
+        }));
+      }
+    } else {
+      setForm((prevFormData) => ({
+        ...prevFormData,
+        [name]: value,
+      }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log({ ...form });
     try {
       const response = await fetch(
         "http://localhost:8888/api/init",
@@ -38,24 +63,31 @@ const Form = () => {
         <FormField
           labelName="Agent Name"
           type="text"
-          name="agentname"
+          name="ai_name"
           placeholder="Ex., AutoGPT"
-          value={form.agentname}
+          value={form.ai_name}
           handleChange={handleChange}
         />
         <FormField
-          labelName="Your Goal"
+          labelName="Role"
           type="text"
-          name="task"
+          name="ai_role"
           placeholder="Make the world a Better place"
-          value={form.task}
+          value={form.ai_role}
+          handleChange={handleChange}
+        />
+        <FormField
+          labelName="Goal"
+          type="text"
+          name="ai_goals"
+          placeholder="Enter goals for AI with comma seperated"
+          value={form.ai_goals}
           handleChange={handleChange}
         />
       </div>
       <div className="mt-5 flex gap-5">
         <button
           type="submit"
-          //   onClick={handleSubmit}
           className=" text-white bg-green-700 font-medium rounded-md text-sm w-full sm:w-auto px-5 py-2.5 text-center"
         >
           Deploy Agent

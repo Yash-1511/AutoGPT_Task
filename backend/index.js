@@ -12,19 +12,17 @@ let python = null;
 let dataToSend = "";
 
 app.get("/api/start", (_, res) => {
-//   const activateCommand = process.platform === 'win32' ? 'activate autogpt && ' : 'source activate autogpt && ';
-//   python = spawn(activateCommand + 'python', ['-m', 'autogpt'], {
-//     cwd: path.join(__dirname, '..', 'autogpt'),
-//     shell: true,
-//   });
   const batFile = path.join(__dirname, 'run_autogpt.bat');
 
   python = spawn(batFile, [], {
-    cwd: path.join(__dirname, '..', 'autogpt'),
-    shell: true
+    cwd: path.join(__dirname, '..', 'autogptweb'),
+    shell:true
   });
+
   python.stdout.on("data", function (data) {
     console.log(data.toString());
+    dataToSend = dataToSend + data.toString()
+
   });
 
   python.stderr.on("data", (data) => {
@@ -43,6 +41,7 @@ app.get("/api/start", (_, res) => {
       console.log("Python script execution failed");
     }
   });
+
   console.log("Python script started");
 
   res.json({ output: "Python script started" });
@@ -50,10 +49,28 @@ app.get("/api/start", (_, res) => {
 
 app.post("/api/init", (req, res) => {
   const yamlString = yaml.dump(req.body);
-  fs.writeFileSync("../ai_settings.yaml", `${yamlString}`, "utf8");
+  fs.writeFileSync("../autogptweb/ai_settings.yaml", `${yamlString}`, "utf8");
 });
 
+app.post("/api/download", (req, res) => {
+  const file = `../autogptweb/auto_gpt_workspace/${req.body.filename}`;
+  res.download(file); // Set disposition and send it.
+});
+app.get("/api/data", (req, res) => {
+  res.json({ output: dataToSend })
+  dataToSend = ""
+})
 
+app.get("/api/stop",(req,res)=>{
+  python.kill();
+  res.json({output: "python script stopped"})
+})
+
+// kill python process on exit
+process.on("exit", () => {
+  python.kill()
+  console.log("Python script killed")
+})
 app.listen(8888, () => {
   console.log("server listening at port 8888");
 });
